@@ -1,0 +1,67 @@
+<!-- Theme: applied before first paint to avoid a flash of the wrong theme. -->
+<script>
+  (function () {
+    var stored = null;
+    try { stored = localStorage.getItem("theme"); } catch (e) {}
+    var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    document.documentElement.setAttribute("data-theme", stored || (prefersDark ? "dark" : "light"));
+  })();
+</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1b2a4a">
+<link rel="icon" type="image/png" href="{{ '/logo.png' | relative_url }}">
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var root = document.documentElement;
+    var header = document.querySelector("header");
+    if (!header) { return; }
+
+    var button = document.createElement("button");
+    button.type = "button";
+    button.className = "theme-toggle";
+
+    function render() {
+      var dark = root.getAttribute("data-theme") === "dark";
+      button.textContent = dark ? "☀️ Light theme" : "🌙 Dark theme";
+      button.setAttribute("aria-pressed", String(dark));
+      button.setAttribute("aria-label", dark ? "Switch to light theme" : "Switch to dark theme");
+    }
+
+    button.addEventListener("click", function () {
+      var next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+      root.setAttribute("data-theme", next);
+      try { localStorage.setItem("theme", next); } catch (e) {}
+      render();
+    });
+
+    if (window.matchMedia) {
+      window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function (e) {
+        var stored = null;
+        try { stored = localStorage.getItem("theme"); } catch (err) {}
+        if (!stored) {
+          root.setAttribute("data-theme", e.matches ? "dark" : "light");
+          render();
+        }
+      });
+    }
+
+    render();
+    header.appendChild(button);
+
+    // Render GitHub alert syntax (> [!NOTE], [!TIP], [!IMPORTANT], [!WARNING], [!CAUTION]).
+    var titles = { note: "ℹ️ Note", tip: "💡 Tip", important: "❗ Important", warning: "⚠️ Warning", caution: "🛑 Caution" };
+    document.querySelectorAll("section blockquote").forEach(function (quote) {
+      var first = quote.querySelector("p");
+      if (!first) { return; }
+      var match = first.innerHTML.match(/^\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*(<br\s*\/?>)?\s*/i);
+      if (!match) { return; }
+      var kind = match[1].toLowerCase();
+      first.innerHTML = first.innerHTML.slice(match[0].length);
+      quote.classList.add("alert", "alert-" + kind);
+      var title = document.createElement("span");
+      title.className = "alert-title";
+      title.textContent = titles[kind];
+      quote.insertBefore(title, quote.firstChild);
+    });
+  });
+</script>
