@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(DotNetVersions)</TargetFrameworks>
+    <AssemblyName>Serilog.Sinks.LogStream</AssemblyName>
+    <RootNamespace>Serilog</RootNamespace>
+    <Description>A Serilog sink that writes events to a LogStream server (guibranco/logstream-server) in batches.</Description>
+    <PackageTags>serilog;sink;logstream;logging;structured-logging</PackageTags>
+    <PackageReleaseNotes>See https://github.com/guibranco/serilog-sinks-logstream/releases</PackageReleaseNotes>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Serilog" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="System.Text.Json" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Serilog.Sinks.LogStream.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+</Project>

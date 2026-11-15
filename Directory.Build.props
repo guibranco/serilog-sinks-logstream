@@ -1,0 +1,52 @@
+<Project>
+  <PropertyGroup Label="SDK Versions">
+    <DotNetVersions>netstandard2.0;net8.0;net9.0;net10.0</DotNetVersions>
+    <DotNetVersionTests>net10.0</DotNetVersionTests>
+  </PropertyGroup>
+  <PropertyGroup Label="NuGet package">
+    <Authors>Guilherme Branco Stracini</Authors>
+    <Company>Guilherme Branco Stracini ME</Company>
+    <Copyright>© $([System.DateTime]::Now.Year) Guilherme Branco Stracini. All rights reserved.</Copyright>
+    <PackageProjectUrl>https://github.com/guibranco/serilog-sinks-logstream</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/guibranco/serilog-sinks-logstream</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <Version>1.0.0</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+  <PropertyGroup Label="NuGet">
+    <NuGetAudit>true</NuGetAudit>
+    <NuGetAuditLevel>low</NuGetAuditLevel>
+    <NuGetAuditMode>all</NuGetAuditMode>
+  </PropertyGroup>
+  <PropertyGroup Label="Build">
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <DebugType>portable</DebugType>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <NoWarn>$(NoWarn);SA1633;SA1101;SA1309;SA1413</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Label="Analysis settings">
+    <AnalysisLevel>latest-Recommended</AnalysisLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference
+      Include="StyleCop.Analyzers"
+      PrivateAssets="all"
+      Condition="$(MSBuildProjectExtension) == '.csproj' And $(IsTestProject) != 'true'"
+    />
+    <PackageReference
+      Include="SonarAnalyzer.CSharp"
+      PrivateAssets="all"
+      Condition="$(MSBuildProjectExtension) == '.csproj' And $(IsTestProject) != 'true'"
+    />
+  </ItemGroup>
+</Project>

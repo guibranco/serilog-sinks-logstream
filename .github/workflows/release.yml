@@ -1,0 +1,122 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_NOLOGO: true
+
+jobs:
+  release:
+    name: Build · Test · Pack · Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: 🧰 Setup .NET 10
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: "10.0.x"
+
+      # ── GitVersion ─────────────────────────────────────────────────────────────
+      - name: 🔢 Install GitVersion
+        uses: gittools/actions/gitversion/setup@7417b1089e2c7de93510f1901d656ddf60bb024f # v4
+        with:
+          versionSpec: "6.x"
+
+      - name: 🔢 Determine version
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@7417b1089e2c7de93510f1901d656ddf60bb024f # v4
+
+      - name: 🩹 Patch Directory.Build.props with the computed version
+        run: |
+          VERSION="${{ steps.gitversion.outputs.semVer }}"
+          ASSEMBLY_VERSION="${{ steps.gitversion.outputs.assemblySemVer }}"
+          echo "Patching version → $VERSION (assembly: $ASSEMBLY_VERSION)"
+          sed -i \
+            -e "s|<Version>[^<]*</Version>|<Version>$VERSION</Version>|g" \
+            -e "s|<AssemblyVersion>[^<]*</AssemblyVersion>|<AssemblyVersion>$ASSEMBLY_VERSION</AssemblyVersion>|g" \
+            Directory.Build.props
+
+      # ── Build & test ─────────────────────────────────────────────────────────────
+      - name: 📦 Restore
+        run: dotnet restore
+
+      - name: 🏗️ Build
+        run: dotnet build --no-restore --configuration Release
+
+      - name: 🧪 Test with coverage
+        run: |
+          dotnet test \
+            --no-build \
+            --configuration Release \
+            /p:CollectCoverage=true \
+            /p:CoverletOutputFormat=opencover
+
+      - name: ☂️ Report coverage → Codecov
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: Tests/Serilog.Sinks.LogStream.Tests/coverage.opencover.xml
+          fail_ci_if_error: false
+
+      # ── Pack ─────────────────────────────────────────────────────────────────────
+      - name: 📦 Pack
+        run: dotnet pack Src/Serilog.Sinks.LogStream --no-build --configuration Release --output artifacts
+
+      # ── Publish to NuGet.org (trusted publishing) ────────────────────────────────
+      - name: 🔑 NuGet login (OIDC → temp API key)
+        uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1
+        id: nuget-login
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
+      - name: 🚀 Push to NuGet.org
+        run: |
+          shopt -s nullglob
+          PACKAGES=(artifacts/*.nupkg)
+          if [ ${#PACKAGES[@]} -eq 0 ]; then
+            echo "::error::No .nupkg files found in artifacts/."
+            exit 1
+          fi
+          for PKG in "${PACKAGES[@]}"; do
+            echo "Publishing $PKG …"
+            dotnet nuget push "$PKG" \
+              --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" \
+              --source https://api.nuget.org/v3/index.json \
+              --skip-duplicate
+          done
+
+      # ── Tag & GitHub release ─────────────────────────────────────────────────────
+      # The tag is what GitVersion reads on the next run to derive the next version.
+      - name: 🏷️ Tag release version
+        run: |
+          VERSION="v${{ steps.gitversion.outputs.semVer }}"
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$VERSION" -m "Release $VERSION"
+          git push origin "$VERSION"
+
+      - name: 📝 Create GitHub Release
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3
+        with:
+          tag_name: v${{ steps.gitversion.outputs.semVer }}
+          name: Release v${{ steps.gitversion.outputs.semVer }}
+          generate_release_notes: true
+          fail_on_unmatched_files: false
+          files: artifacts/*
