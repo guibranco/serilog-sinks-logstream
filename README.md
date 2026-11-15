@@ -279,11 +279,44 @@ Contributions are welcome! Fork the repository, create a branch, and open a pull
 Thanks to all contributors! 💙
 
 <!-- readme: collaborators,contributors,snyk-bot/- -start -->
+<table>
+	<tbody>
+		<tr>
+            <td align="center">
+                <a href="https://github.com/guibranco">
+                    <img src="https://avatars.githubusercontent.com/u/3362854?v=4" width="100;" alt="guibranco"/>
+                    <br />
+                    <sub><b>Guilherme Branco Stracini</b></sub>
+                </a>
+            </td>
+		</tr>
+	</tbody>
+</table>
 <!-- readme: collaborators,contributors,snyk-bot/- -end -->
 
 ### Bots
 
 <!-- readme: bots,snyk-bot -start -->
+<table>
+	<tbody>
+		<tr>
+            <td align="center">
+                <a href="https://github.com/dependabot[bot]">
+                    <img src="https://avatars.githubusercontent.com/in/29110?v=4" width="100;" alt="dependabot[bot]"/>
+                    <br />
+                    <sub><b>dependabot[bot]</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/snyk-bot">
+                    <img src="https://avatars.githubusercontent.com/u/19733683?v=4" width="100;" alt="snyk-bot"/>
+                    <br />
+                    <sub><b>Snyk bot</b></sub>
+                </a>
+            </td>
+		</tr>
+	</tbody>
+</table>
 <!-- readme: bots,snyk-bot -end -->
 
 ---
