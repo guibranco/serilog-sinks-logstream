@@ -1,0 +1,5 @@
+theme: jekyll-theme-minimal
+title: Serilog.Sinks.LogStream
+description: 📡🪵 A Serilog sink that writes events to a LogStream server.
+logo: https://raw.githubusercontent.com/guibranco/serilog-sinks-logstream/main/logo.png
+show_downloads: true
