@@ -1,0 +1,225 @@
+---
+---
+
+@import "jekyll-theme-minimal";
+
+// ── Theme tokens ───────────────────────────────────────────────────────────────
+// Light and dark palettes built from the logo colours (navy, teal, blue).
+
+:root,
+[data-theme="light"] {
+  --bg: #ffffff;
+  --text: #5b6472;
+  --heading: #1b2a4a;
+  --strong: #1b2a4a;
+  --link: #0f8f80;
+  --link-hover: #2563eb;
+  --border: #e3e8ef;
+  --surface: #f6f8fb;
+  --code-text: #1f2937;
+}
+
+[data-theme="dark"] {
+  --bg: #0d1526;
+  --text: #b6c2d4;
+  --heading: #f1f5f9;
+  --strong: #f1f5f9;
+  --link: #2dd4bf;
+  --link-hover: #60a5fa;
+  --border: #24324f;
+  --surface: #14203a;
+  --code-text: #e2e8f0;
+}
+
+// ── Base ───────────────────────────────────────────────────────────────────────
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+h1, h2, h3, h4, h5, h6, dt, th, strong {
+  color: var(--heading);
+}
+
+h2 {
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+a {
+  color: var(--link);
+}
+
+a:hover, a:focus {
+  color: var(--link-hover);
+}
+
+a small, a:hover small {
+  color: var(--text);
+}
+
+hr {
+  background: var(--border);
+}
+
+blockquote {
+  border-left: 3px solid var(--link);
+  background: var(--surface);
+  border-radius: 0 6px 6px 0;
+  padding: 10px 16px;
+  font-style: normal;
+  margin: 0 0 20px;
+}
+
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+// ── GitHub-style alerts (converted from > [!NOTE] blockquotes in head-custom.html) ──
+
+blockquote.alert {
+  --alert: #60a5fa;
+  border-left-color: var(--alert);
+}
+
+blockquote.alert-tip { --alert: #22c55e; }
+blockquote.alert-important { --alert: #a78bfa; }
+blockquote.alert-warning { --alert: #f59e0b; }
+blockquote.alert-caution { --alert: #ef4444; }
+
+.alert-title {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 700;
+  color: var(--alert);
+}
+
+// ── Header ─────────────────────────────────────────────────────────────────────
+
+header h1 a {
+  color: var(--heading);
+}
+
+// The README opens with the same title and logo the sidebar already shows.
+section > h1:first-child,
+section > p > img[alt$="logo"] {
+  display: none;
+}
+
+header img {
+  width: 128px;
+  border-radius: 24px;
+  margin-bottom: 12px;
+}
+
+header::after {
+  content: "";
+  display: block;
+  height: 3px;
+  width: 64px;
+  margin-top: 16px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #2dd4bf, #60a5fa);
+}
+
+ul.downloads {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+.downloads li {
+  border-right-color: var(--border);
+}
+
+.downloads a {
+  color: var(--text);
+}
+
+.downloads a:hover, .downloads a:focus {
+  color: var(--link-hover);
+}
+
+.downloads a strong {
+  color: var(--heading);
+}
+
+.theme-toggle {
+  margin-top: 12px;
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--heading);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.theme-toggle:hover, .theme-toggle:focus-visible {
+  border-color: var(--link);
+}
+
+// ── Code and tables ────────────────────────────────────────────────────────────
+
+code, pre {
+  color: var(--code-text);
+}
+
+:not(pre) > code {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 4px;
+  font-size: 0.9em;
+}
+
+pre, .highlight {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+.highlight pre {
+  border: 0;
+  background: transparent;
+}
+
+th, td {
+  border-bottom-color: var(--border);
+}
+
+thead th {
+  border-bottom-width: 2px;
+}
+
+tbody tr:hover {
+  background: var(--surface);
+}
+
+// ── Responsive section borders ─────────────────────────────────────────────────
+
+@media print, screen and (max-width: 960px) {
+  section {
+    border-color: var(--border);
+  }
+}
+
+// ── Syntax highlighting (dark) ─────────────────────────────────────────────────
+// The theme ships Rouge's GitHub light palette; override the common tokens.
+
+[data-theme="dark"] .highlight {
+  .c, .c1, .cm, .cs, .cp { color: #7d8ba1; font-style: italic; }
+  .k, .kd, .kn, .kp, .kr, .kt, .kc { color: #c4a7ff; font-weight: normal; }
+  .s, .s1, .s2, .sb, .sc, .sd, .se, .sh, .si, .sx, .sr { color: #8be9b0; }
+  .m, .mi, .mf, .mh, .mo, .il { color: #f9c97a; }
+  .nf, .fm { color: #7cc4ff; font-weight: normal; }
+  .nc, .nn, .nt { color: #5eead4; font-weight: normal; }
+  .na, .nb, .bp, .no, .nv, .vc, .vg, .vi { color: #93c5fd; }
+  .nl, .nd, .ni, .ne { color: #7dd3fc; font-weight: normal; }
+  .n, .w { color: var(--code-text); }
+  .o, .ow, .p { color: #cbd5e1; font-weight: normal; }
+  .err { color: #fca5a5; background: transparent; }
+  .gd { color: #fca5a5; background: transparent; }
+  .gi { color: #8be9b0; background: transparent; }
+}
