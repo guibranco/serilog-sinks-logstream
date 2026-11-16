@@ -13,6 +13,9 @@ namespace Serilog.Sinks.LogStream;
 /// <item><description>File storage: one shared secret, sent as <c>Authorization: Bearer &lt;API_SECRET&gt;</c>. Set <see cref="ApiSecret"/> and <see cref="AppKey"/>.</description></item>
 /// <item><description>MariaDB storage: a per-client key and token, sent as <c>X-Api-Key</c> and <c>X-Api-Token</c>. Set <see cref="ApiKey"/> and <see cref="ApiToken"/>; the server uses the key as the app key.</description></item>
 /// </list>
+/// With <see cref="Transport"/> set to <see cref="LogStreamTransport.Udp"/>, the same credentials sign each
+/// datagram: the key is <see cref="AppKey"/> (file storage) or <see cref="ApiKey"/> (MariaDB storage), and the
+/// secret is <see cref="ApiSecret"/> or <see cref="ApiToken"/>. The secret never travels on the wire.
 /// </remarks>
 public sealed class LogStreamSinkOptions
 {
@@ -51,6 +54,33 @@ public sealed class LogStreamSinkOptions
     /// Gets or sets the client token (MariaDB storage mode), sent as <c>X-Api-Token</c>.
     /// </summary>
     public string? ApiToken { get; set; }
+
+    /// <summary>
+    /// Gets or sets how events are delivered. Defaults to <see cref="LogStreamTransport.Http"/>.
+    /// </summary>
+    public LogStreamTransport Transport { get; set; } = LogStreamTransport.Http;
+
+    /// <summary>
+    /// Gets or sets the host that receives UDP datagrams. Defaults to the host of <see cref="ServerUrl"/>.
+    /// </summary>
+    public string? UdpHost { get; set; }
+
+    /// <summary>
+    /// Gets or sets the UDP port, the server's <c>UDP_PORT</c>. Defaults to 8082.
+    /// </summary>
+    public int UdpPort { get; set; } = LogStreamUdpPacket.DefaultPort;
+
+    /// <summary>
+    /// Gets or sets the largest datagram sent, in bytes. Match the server's <c>UDP_MAX_PACKET_SIZE</c>
+    /// (default 8192), since larger packets are dropped by the server.
+    /// </summary>
+    public int UdpMaxPacketSize { get; set; } = LogStreamUdpPacket.DefaultMaxPacketSize;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether events too large for one datagram are posted over HTTP
+    /// instead of being dropped. Defaults to <c>true</c>.
+    /// </summary>
+    public bool UdpFallbackToHttp { get; set; } = true;
 
     /// <summary>
     /// Gets or sets the name of the property whose value becomes the entry category.
@@ -109,6 +139,22 @@ public sealed class LogStreamSinkOptions
     internal bool UsesSharedSecret => !string.IsNullOrWhiteSpace(ApiSecret);
 
     /// <summary>
+    /// Gets the key that identifies the app in UDP packets.
+    /// </summary>
+    internal string UdpKey => UsesSharedSecret ? AppKey! : ApiKey!;
+
+    /// <summary>
+    /// Gets the secret that signs UDP packets.
+    /// </summary>
+    internal string UdpSecret => UsesSharedSecret ? ApiSecret! : ApiToken!;
+
+    /// <summary>
+    /// Gets the host that receives UDP datagrams.
+    /// </summary>
+    internal string ResolvedUdpHost =>
+        string.IsNullOrWhiteSpace(UdpHost) ? ServerUrl!.DnsSafeHost : UdpHost!.Trim();
+
+    /// <summary>
     /// Validates the settings.
     /// </summary>
     /// <exception cref="InvalidOperationException">A required setting is missing or invalid.</exception>
@@ -153,6 +199,34 @@ public sealed class LogStreamSinkOptions
         if (string.IsNullOrWhiteSpace(DefaultCategory))
         {
             throw new InvalidOperationException("DefaultCategory cannot be empty.");
+        }
+
+        if (Transport != LogStreamTransport.Http && Transport != LogStreamTransport.Udp)
+        {
+            throw new InvalidOperationException("Transport must be Http or Udp.");
+        }
+
+        if (Transport == LogStreamTransport.Udp)
+        {
+            if (UdpPort < 1 || UdpPort > 65_535)
+            {
+                throw new InvalidOperationException("UdpPort must be between 1 and 65535.");
+            }
+
+            if (
+                UdpMaxPacketSize < LogStreamUdpPacket.MinPacketSize
+                || UdpMaxPacketSize > LogStreamUdpPacket.MaxDatagramSize
+            )
+            {
+                throw new InvalidOperationException(
+                    "UdpMaxPacketSize must be between 256 and 65507."
+                );
+            }
+
+            if (string.IsNullOrWhiteSpace(ResolvedUdpHost))
+            {
+                throw new InvalidOperationException("A UDP host is required.");
+            }
         }
     }
 }
