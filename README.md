@@ -33,6 +33,8 @@ Documentation: [GitHub Pages](https://guibranco.github.io/serilog-sinks-logstrea
 - **Batched delivery** — events are sent in batches to `POST /api/logs` using Serilog's built-in batching.
 - **Structured** — rendered message, message template, category, level, properties, exception chain and trace ID,
   so events can be searched, grouped by template and followed by trace in the LogStream UI.
+- **HTTP or UDP** — batches over HTTP with retries, or HMAC-signed fire-and-forget UDP datagrams for
+  high-volume logging, with oversized events falling back to HTTP.
 - **Both storage modes** — file storage (shared `API_SECRET` + `appKey`) and MariaDB storage (per-app
   `X-Api-Key` / `X-Api-Token`).
 - **Resilient** — transient failures (network errors, timeouts, 408, 429, 5xx) are retried with back-off;
@@ -120,6 +122,33 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 ```
 
+### UDP
+
+For high-volume logging the server can also take **HMAC-signed UDP datagrams** (`UDP_PORT`, default `8082/udp`),
+which skip the TCP handshake, TLS and HTTP parsing. Set `transport` to `Udp`; the same credentials sign every packet
+(`apiToken`, or `apiSecret` in file storage), and the secret never travels on the wire:
+
+```csharp
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.LogStream(
+        serverUrl: "https://logs.example.com",
+        appId: "production",
+        apiKey: "billing-api",
+        apiToken: Environment.GetEnvironmentVariable("LOGSTREAM_API_TOKEN"),
+        transport: LogStreamTransport.Udp,
+        udpPort: 8082) // the host defaults to the host of serverUrl; set udpHost to override it
+    .CreateLogger();
+```
+
+Each event becomes one datagram, still batched by Serilog before sending. UDP is **fire-and-forget**: the server
+never replies, so lost, rejected (stale clock, unknown key, source IP not allowed…) or dropped packets are not
+reported to the sink — check `udp.rejected` in the server's `GET /api/health`. Keep clocks NTP-synced: packets must
+arrive within ±30 s of the server's time.
+
+Events too large for one datagram (`UdpMaxPacketSize`, default 8192 bytes, the server's `UDP_MAX_PACKET_SIZE`) —
+typically ones with long stack traces — are posted over HTTP instead, so `serverUrl` stays required. Set
+`UdpFallbackToHttp = false` to drop them (reported to `SelfLog`).
+
 > [!IMPORTANT]
 > Call `Log.CloseAndFlush()` (or dispose the logger) on shutdown so buffered events are sent.
 
@@ -171,6 +200,11 @@ Keep the secret or token out of source control (user secrets, environment variab
 | `levelSwitch` | `null` | Switch to change the minimum level at runtime |
 | `formatProvider` | invariant culture | Culture used to render messages |
 | `messageHandler` | `null` | HTTP message handler for the sink's client (e.g. a proxy) |
+| `transport` | `Http` | `Http`, or `Udp` for signed, fire-and-forget datagrams |
+| `udpHost` | host of `serverUrl` | Host that receives UDP datagrams |
+| `udpPort` | `8082` | UDP port (the server's `UDP_PORT`) |
+
+`UdpMaxPacketSize` (default 8192) and `UdpFallbackToHttp` (default `true`) are set through the options overload below.
 
 ### Full options
 
@@ -217,6 +251,11 @@ Log.Logger = new LoggerConfiguration()
 | `app_key`, `app_id`, `batch_id` | The options, and a new GUID per request |
 | `User-Agent` header | `{entry assembly}/{version} (Serilog.Sinks.LogStream/{version})`, or `UserAgent` |
 
+Over UDP each datagram is `{"v":1,"key":…,"ts":…,"nonce":…,"sig":…,"log":{…}}`: `key` is `apiKey` (or `appKey`),
+`ts` the send time in Unix milliseconds, `nonce` 16 random bytes as hex, and `sig` the hex
+`HMAC-SHA256(secret, "{key}:{ts}:{nonce}:{log}")` over the exact `log` text. `log` holds the fields above plus
+`app_id`, `batch_id` (shared by the events of one Serilog batch) and `user_agent`.
+
 ---
 
 ## Batching and failures
@@ -234,6 +273,10 @@ Network errors, timeouts and HTTP 408, 429 and 5xx are retried with back-off. Ot
 are reported to [`SelfLog`](https://github.com/serilog/serilog/wiki/Debugging-and-Diagnostics) and the batch is
 dropped, because sending it again would fail the same way. Entries the server rejects one by one (the `errors`
 list of a 201/202 response) are reported to `SelfLog` too.
+
+Over UDP, only a failure to resolve the host (or of the HTTP fallback for oversized events, which is sent first) is
+retried. Datagrams the OS refuses to send are reported to `SelfLog` and dropped rather than retried, so an event is
+never sent twice.
 
 ```csharp
 Serilog.Debugging.SelfLog.Enable(Console.Error);
