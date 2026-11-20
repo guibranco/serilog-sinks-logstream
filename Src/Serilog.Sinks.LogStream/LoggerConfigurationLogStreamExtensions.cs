@@ -42,6 +42,9 @@ public static class LoggerConfigurationLogStreamExtensions
     /// <param name="levelSwitch">A switch allowing the pass-through minimum level to be changed at runtime.</param>
     /// <param name="formatProvider">Supplies culture-specific formatting information, or <c>null</c> for the invariant culture.</param>
     /// <param name="messageHandler">An HTTP message handler for the sink's client, for example to set a proxy.</param>
+    /// <param name="transport"><see cref="LogStreamTransport.Http"/> (default) or <see cref="LogStreamTransport.Udp"/> for signed, fire-and-forget datagrams.</param>
+    /// <param name="udpHost">The UDP host. Defaults to the host of <paramref name="serverUrl"/>.</param>
+    /// <param name="udpPort">The UDP port, the server's <c>UDP_PORT</c>. Defaults to 8082.</param>
     /// <returns>Configuration object allowing method chaining.</returns>
     public static LoggerConfiguration LogStream(
         this LoggerSinkConfiguration sinkConfiguration,
@@ -59,7 +62,10 @@ public static class LoggerConfigurationLogStreamExtensions
         string categoryPropertyName = "SourceContext",
         LoggingLevelSwitch? levelSwitch = null,
         IFormatProvider? formatProvider = null,
-        HttpMessageHandler? messageHandler = null
+        HttpMessageHandler? messageHandler = null,
+        LogStreamTransport transport = LogStreamTransport.Http,
+        string? udpHost = null,
+        int udpPort = 8082
     )
     {
         if (serverUrl is null)
@@ -78,6 +84,9 @@ public static class LoggerConfigurationLogStreamExtensions
             CategoryPropertyName = categoryPropertyName,
             FormatProvider = formatProvider,
             MessageHandler = messageHandler,
+            Transport = transport,
+            UdpHost = udpHost,
+            UdpPort = udpPort,
         };
 
         var batching = new BatchingOptions

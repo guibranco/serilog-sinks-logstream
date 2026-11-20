@@ -8,7 +8,7 @@ using Serilog.Events;
 namespace Serilog.Sinks.LogStream;
 
 /// <summary>
-/// Writes Serilog events as a LogStream <c>POST /api/logs</c> batch.
+/// Writes Serilog events as a LogStream <c>POST /api/logs</c> batch, or as the <c>log</c> entry of a UDP packet.
 /// </summary>
 internal static class LogStreamPayload
 {
@@ -75,6 +75,36 @@ internal static class LogStreamPayload
         return stream.ToArray();
     }
 
+    /// <summary>
+    /// Serializes one event as the <c>log</c> entry of a UDP packet. Unlike batch entries, it carries
+    /// its own <c>app_id</c>, <c>batch_id</c> and <c>user_agent</c>, since a datagram has no envelope or headers.
+    /// </summary>
+    /// <param name="logEvent">The event.</param>
+    /// <param name="options">The sink options.</param>
+    /// <param name="batchId">The identifier shared by the events emitted together.</param>
+    /// <param name="userAgent">The user agent.</param>
+    /// <returns>The UTF-8 JSON entry.</returns>
+    public static byte[] WriteUdpLog(
+        LogEvent logEvent,
+        LogStreamSinkOptions options,
+        string batchId,
+        string userAgent
+    )
+    {
+        using var stream = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(stream))
+        {
+            writer.WriteStartObject();
+            writer.WriteString("app_id", options.AppId);
+            writer.WriteString("batch_id", batchId);
+            writer.WriteString("user_agent", userAgent);
+            WriteEntryFields(writer, logEvent, options);
+            writer.WriteEndObject();
+        }
+
+        return stream.ToArray();
+    }
+
     private static void WriteEntry(
         Utf8JsonWriter writer,
         LogEvent logEvent,
@@ -82,7 +112,16 @@ internal static class LogStreamPayload
     )
     {
         writer.WriteStartObject();
+        WriteEntryFields(writer, logEvent, options);
+        writer.WriteEndObject();
+    }
 
+    private static void WriteEntryFields(
+        Utf8JsonWriter writer,
+        LogEvent logEvent,
+        LogStreamSinkOptions options
+    )
+    {
         if (logEvent.TraceId is { } traceId)
         {
             writer.WriteString("trace_id", traceId.ToHexString());
@@ -109,8 +148,6 @@ internal static class LogStreamPayload
 
         writer.WritePropertyName("context");
         WriteContext(writer, logEvent, options);
-
-        writer.WriteEndObject();
     }
 
     private static string GetCategory(LogEvent logEvent, LogStreamSinkOptions options)
