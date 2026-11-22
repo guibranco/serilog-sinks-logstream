@@ -55,15 +55,12 @@ public class LogStreamSinkTests
     public async Task ClientCredentialsShouldBeSentAsHeaders()
     {
         using var handler = new RecordingHandler();
-        using var sink = CreateSink(
-            handler,
-            o =>
-            {
-                o.ApiSecret = null;
-                o.ApiKey = "billing-api";
-                o.ApiToken = "lss_token";
-            }
-        );
+        using var sink = CreateSink(handler, o =>
+        {
+            o.ApiSecret = null;
+            o.ApiKey = "billing-api";
+            o.ApiToken = "lss_token";
+        });
 
         await sink.EmitBatchAsync(TestEvents.Capture(l => l.Information("Hello")).ToList());
 

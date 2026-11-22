@@ -223,14 +223,11 @@ public sealed class LogStreamUdpTests : IDisposable
         try
         {
             using var handler = new RecordingHandler();
-            using var sink = CreateSink(
-                handler,
-                o =>
-                {
-                    o.UdpMaxPacketSize = 1024;
-                    o.UdpFallbackToHttp = false;
-                }
-            );
+            using var sink = CreateSink(handler, o =>
+            {
+                o.UdpMaxPacketSize = 1024;
+                o.UdpFallbackToHttp = false;
+            });
 
             await sink.EmitBatchAsync(
                 TestEvents.Capture(l => l.Information("{Big}", new string('x', 4000))).ToList()
