@@ -275,8 +275,7 @@ public sealed class LogStreamSink : IBatchedLogEventSink, IDisposable
             throw new LogStreamException($"Could not resolve the LogStream UDP host '{host}'.", e);
         }
 
-        var address =
-            addresses.FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork)
+        var address = addresses.FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork)
             ?? addresses.FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetworkV6)
             ?? throw new LogStreamException($"The LogStream UDP host '{host}' has no IP address.");
 
